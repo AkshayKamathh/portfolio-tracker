@@ -258,3 +258,36 @@ def test_benchmark_filters_by_date_range(client, monkeypatch):
     assert data[1]["date"] == "2024-01-12"
     assert data[1]["portfolio_return"] == 9.09
     assert data[1]["benchmark_return"] == 0.99
+
+
+def test_quotes_requires_tickers_param(client):
+    response = client.get("/quotes")
+    assert response.status_code == 422
+
+
+def test_quotes_batch(client, monkeypatch):
+    monkeypatch.setattr(
+        portfolio_routes.prices,
+        "get_current_price",
+        lambda ticker: {"AAPL": 100.0, "MSFT": 250.55}[ticker],
+    )
+    response = client.get("/quotes?tickers=AAPL,MSFT")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["prices"] == {"AAPL": 100.0, "MSFT": 250.55}
+    assert data["errors"] == []
+
+
+def test_quotes_partial_failure(client, monkeypatch):
+    def fake_price(sym: str) -> float:
+        if sym == "BAD":
+            raise ValueError("offline")
+        return 42.0
+
+    monkeypatch.setattr(portfolio_routes.prices, "get_current_price", fake_price)
+    response = client.get("/quotes?tickers=AAPL,BAD")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["prices"] == {"AAPL": 42.0}
+    assert len(data["errors"]) == 1
+    assert "BAD" in data["errors"][0]

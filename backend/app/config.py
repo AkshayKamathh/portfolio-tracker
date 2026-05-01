@@ -26,3 +26,17 @@ def _cors_origins() -> list[str]:
 
 FRONTEND_ORIGINS: list[str] = _cors_origins()
 FRONTEND_ORIGIN: str = FRONTEND_ORIGINS[0]
+
+
+def _int_env(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None or not str(raw).strip():
+        return default
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return default
+
+
+# Yahoo Finance in-memory cache TTL (seconds); used by app.services.prices
+YF_CACHE_TTL: int = _int_env("YF_CACHE_TTL", 60)
