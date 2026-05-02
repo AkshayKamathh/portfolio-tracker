@@ -12,6 +12,7 @@ import Charts from "./components/Charts.jsx";
 import SummaryCards from "./components/SummaryCards.jsx";
 import TransactionForm from "./components/TransactionForm.jsx";
 import TransactionTable from "./components/TransactionTable.jsx";
+import { MAX_INPUT_DATE, MIN_INPUT_DATE } from "./dateBounds.js";
 import { downloadTransactionsCsv } from "./utils/exportTransactionsCsv.js";
 
 const EMPTY_PORTFOLIO = {
@@ -181,6 +182,8 @@ export default function App() {
                 <input
                   id="chartFromInput"
                   type="date"
+                  min={MIN_INPUT_DATE}
+                  max={MAX_INPUT_DATE}
                   value={chartFromDraft}
                   onChange={(e) => setChartFromDraft(e.target.value)}
                 />
@@ -190,6 +193,8 @@ export default function App() {
                 <input
                   id="chartToInput"
                   type="date"
+                  min={MIN_INPUT_DATE}
+                  max={MAX_INPUT_DATE}
                   value={chartToDraft}
                   onChange={(e) => setChartToDraft(e.target.value)}
                 />

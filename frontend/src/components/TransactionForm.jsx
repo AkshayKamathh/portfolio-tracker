@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createTransaction, updateTransaction } from "../api";
+import { MAX_INPUT_DATE, MIN_INPUT_DATE } from "../dateBounds.js";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -127,6 +128,8 @@ export default function TransactionForm({ editing, onCancelEdit, onCreated }) {
           <input
             id="date"
             type="date"
+            min={MIN_INPUT_DATE}
+            max={MAX_INPUT_DATE}
             value={form.date}
             onChange={update("date")}
             required

@@ -212,6 +212,21 @@ def test_benchmark_empty_when_no_transactions(client):
     assert response.json() == []
 
 
+def test_performance_and_benchmark_empty_when_historical_quotes_fail(
+    client, monkeypatch,
+):
+    _create_buy(client, "AAPL", 10, 100, "2024-01-10")
+
+    def boom(*_args, **_kwargs):
+        raise ValueError("no quote")
+
+    monkeypatch.setattr(
+        performance_service.prices, "get_historical_close", boom
+    )
+    assert client.get("/performance").json() == []
+    assert client.get("/benchmark").json() == []
+
+
 def test_benchmark_filters_by_date_range(client, monkeypatch):
     _create_buy(client, "AAPL", 10, 100, "2024-01-10")
 

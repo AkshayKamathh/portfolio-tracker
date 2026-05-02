@@ -65,6 +65,10 @@ cd backend && source venv/bin/activate && pytest
 cd frontend && npm run build
 ```
 
+On GitHub, **Actions → CI** runs the same pytest suite and `npm run build` on each push (see `.github/workflows/ci.yml`).
+
+**Transaction dates** must fall between **1970-01-01** and **2100-12-31** (API validation + browser date pickers). That blocks typos like year `22026` without forbidding near-future trades.
+
 ---
 
 ## API (summary)

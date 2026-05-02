@@ -1,9 +1,11 @@
 """Pydantic models for request/response validation."""
 
-from datetime import date
+import datetime as dt
 from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
+
+from app.utils.dates import validate_transaction_date
 
 MEMO_MAX_LEN = 500
 
@@ -13,7 +15,7 @@ class TransactionCreate(BaseModel):
     transaction_type: Literal["buy", "sell"]
     quantity: float = Field(..., gt=0)
     price: float = Field(..., gt=0)
-    date: date
+    date: dt.date
     memo: Optional[str] = None
 
     @field_validator("ticker")
@@ -23,6 +25,11 @@ class TransactionCreate(BaseModel):
         if not cleaned:
             raise ValueError("ticker must not be empty")
         return cleaned
+
+    @field_validator("date")
+    @classmethod
+    def transaction_date_in_range(cls, value: dt.date) -> dt.date:
+        return validate_transaction_date(value)
 
     @field_validator("memo")
     @classmethod
@@ -40,7 +47,7 @@ class TransactionUpdate(BaseModel):
     transaction_type: Literal["buy", "sell"] | None = None
     quantity: float | None = None
     price: float | None = None
-    date: Optional[date] = None
+    date: Optional[dt.date] = None
     memo: Optional[str] = None
 
     @field_validator("ticker")
@@ -70,6 +77,13 @@ class TransactionUpdate(BaseModel):
         if value <= 0:
             raise ValueError("price must be greater than zero")
         return value
+
+    @field_validator("date")
+    @classmethod
+    def transaction_date_in_range(cls, value: Optional[dt.date]) -> Optional[dt.date]:
+        if value is None:
+            return None
+        return validate_transaction_date(value)
 
     @field_validator("memo")
     @classmethod

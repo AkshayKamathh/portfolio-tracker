@@ -88,6 +88,43 @@ def test_invalid_transaction_type_rejected(client):
     assert response.status_code == 422
 
 
+def test_create_rejects_transaction_date_before_1970(client):
+    response = client.post(
+        "/transactions",
+        json={
+            "ticker": "AAPL",
+            "transaction_type": "buy",
+            "quantity": 1,
+            "price": 10,
+            "date": "1969-12-31",
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_create_rejects_transaction_date_after_2100(client):
+    response = client.post(
+        "/transactions",
+        json={
+            "ticker": "AAPL",
+            "transaction_type": "buy",
+            "quantity": 1,
+            "price": 10,
+            "date": "2101-01-01",
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_patch_rejects_transaction_date_out_of_range(client):
+    created = _create_buy(client, ticker="AAPL", quantity=1, price=10, date="2024-01-10").json()
+    response = client.patch(
+        f"/transactions/{created['id']}",
+        json={"date": "2101-06-01"},
+    )
+    assert response.status_code == 422
+
+
 def test_oversell_rejected(client):
     _create_buy(client, ticker="TSLA", quantity=3, price=220, date="2024-04-05")
     response = client.post(
