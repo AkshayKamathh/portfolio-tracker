@@ -37,3 +37,6 @@ def get_db() -> Database:
 
 def get_transactions_collection() -> Collection:
     return get_db()["transactions"]
+
+def get_alerts_collection() -> Collection:
+    return get_db()["alerts"]
