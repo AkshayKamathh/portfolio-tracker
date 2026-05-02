@@ -172,6 +172,10 @@ export default function App() {
               }}
               style={{ marginBottom: 12 }}
             >
+              <p className="form-hint" style={{ gridColumn: "1 / -1", margin: "0 0 8px" }}>
+                Optional date window for the two line charts only. Leave both blank for full history,
+                or pick dates and click <strong>Apply</strong>.
+              </p>
               <div className="form-field">
                 <label htmlFor="chartFromInput">From</label>
                 <input
@@ -212,6 +216,12 @@ export default function App() {
                 </button>
               </div>
             </form>
+            {(chartFrom || chartTo) && (
+              <p className="form-hint" style={{ marginBottom: 12 }}>
+                Charts use data from <strong>{chartFrom || "start"}</strong> to{" "}
+                <strong>{chartTo || "today"}</strong>.
+              </p>
+            )}
             <Charts
               performance={performance}
               benchmark={benchmark}
@@ -248,6 +258,9 @@ export default function App() {
               value={tickerInput}
               onChange={(e) => setTickerInput(e.target.value)}
             />
+            <span className="form-hint" style={{ display: "block", marginTop: 6 }}>
+              Type a symbol and click <strong>Apply</strong>. The field alone does not filter.
+            </span>
           </div>
           <div className="form-field">
             <label>&nbsp;</label>
@@ -285,6 +298,21 @@ export default function App() {
             </button>
           </div>
         </form>
+        {tickerFilter ? (
+          <p className="form-hint" style={{ marginBottom: 12 }}>
+            Showing transactions for <strong>{tickerFilter}</strong> only.{" "}
+            <button
+              type="button"
+              className="text-link"
+              onClick={() => {
+                setTickerInput("");
+                setTickerFilter("");
+              }}
+            >
+              Clear filter
+            </button>
+          </p>
+        ) : null}
         <TransactionTable
           transactions={transactions}
           onDeleted={refreshAll}
