@@ -11,7 +11,7 @@ MONGO_DB_NAME: str = os.getenv("MONGO_DB_NAME", "portfolio_tracker")
 
 
 def _cors_origins() -> list[str]:
-    """Parse FRONTEND_ORIGIN (comma-separated allowed). For local Vite, allow both hostnames."""
+    """Build CORS allow-list: comma-separated FRONTEND_ORIGIN, plus localhost/127.0.0.1 for local Vite."""
     raw = (os.getenv("FRONTEND_ORIGIN") or "http://localhost:5173").strip()
     parts = [p.strip() for p in raw.split(",") if p.strip()]
     if not parts:

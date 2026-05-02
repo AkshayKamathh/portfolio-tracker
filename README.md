@@ -1,52 +1,55 @@
 # Portfolio Tracker
 
-Log stock and crypto trades, store them in MongoDB, and view holdings, portfolio value, and a simple benchmark against the S&P 500 (via SPY and Yahoo Finance).
+A small full-stack app for logging stock and crypto trades in **MongoDB**, then seeing holdings, totals, and charts. Live prices and history come from **Yahoo Finance** (via yfinance); the benchmark line is **SPY** as a stand-in for the S&P 500.
 
 **Authors:** Akshay K, Arsen K, Stefan L · CS122
 
 ---
 
-## Features
+## What you get
 
-- Buy/sell with ticker, quantity, price, date, optional memo; edit (PATCH) and delete by id; oversell blocked.
-- List all transactions or filter by ticker; export the current list as CSV (browser or `GET /transactions/export`).
-- Demo seed from the UI or `POST /demo/seed` (replaces all rows with a fixed sample set).
-- Summary cards, charts (value over time, vs SPY, allocation), optional **from** / **to** dates on performance and benchmark.
-- Backend tests use an in-memory fake collection and mocked prices (no Atlas required).
+- **Transactions:** buy/sell with ticker, quantity, price, date, optional memo (500 chars). Edit with PATCH, delete by id. Oversells are rejected.
+- **Lists:** all rows newest first, filter by ticker, **Export CSV** in the browser or `GET /transactions/export`.
+- **Demo:** button in the UI or `POST /demo/seed` replaces the whole collection with a fixed six-row sample.
+- **Summary:** total value, cost basis, gain/loss, return %, per-asset rows, and **warnings** when a live quote fails (cost basis is used as a fallback).
+- **Charts:** portfolio value over time, cumulative return vs SPY, and an allocation pie. Optional **from** / **to** query the API and refetch when you click **Apply** on the chart form.
+- **Charts when Yahoo is thin:** if daily history is missing, the value chart falls back to a **flat line at your current portfolio total** (same idea as the summary cards). The benchmark then keeps the dates but sets the **SPY leg to 0%** until real SPY bars exist.
+- **Sanity checks:** trade dates must sit between **1970-01-01** and **2100-12-31** (API + browser inputs).
+- **Tests:** pytest with a fake in-memory collection and mocked prices—no Atlas required to run them.
 
-Not included: auth, multi-user, tax lots, broker CSV import, dividends.
+Out of scope: logins, multi-user, tax lots, broker CSV import, dividends.
 
-**Demo for graders:** step-by-step flow and screenshot checklist → [`docs/DEMO.md`](docs/DEMO.md). Drop PNGs into [`docs/screenshots/`](docs/screenshots/) after you capture them locally.
+**Grading / demo:** walkthrough and screenshot filenames live in [`docs/DEMO.md`](docs/DEMO.md); drop PNGs under [`docs/screenshots/`](docs/screenshots/) when you have them.
 
 ---
 
 ## Stack
 
-FastAPI · PyMongo · Pydantic · Pandas · yfinance · React 18 · Vite · Recharts
+FastAPI, PyMongo, Pydantic, Pandas, yfinance, React 18, Vite, Recharts.
 
 ---
 
-## Run it locally
+## Run it (two terminals)
 
-**Backend** (Python 3.10+)
+**1. Backend** — Python 3.10+
 
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
+source venv/bin/activate    # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 cp ../.env.example .env
 ```
 
-Set `MONGO_URI` in `backend/.env` (see `.env.example`). Optional: `MONGO_DB_NAME`, `FRONTEND_ORIGIN`, `SSL_CERT_FILE` if TLS fails on your machine.
+Put your **`MONGO_URI`** in `backend/.env`. Optional: `MONGO_DB_NAME`, `FRONTEND_ORIGIN`, `SSL_CERT_FILE` if TLS complains on your machine.
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-API: `http://127.0.0.1:8000` · OpenAPI: `/docs`
+API: `http://127.0.0.1:8000` · Interactive docs: `/docs`
 
-**Frontend** (Node 18+)
+**2. Frontend** — Node 18+
 
 ```bash
 cd frontend
@@ -54,44 +57,46 @@ npm install
 npm run dev
 ```
 
-App: `http://localhost:5173` · If the API is not on port 8000, set `VITE_API_BASE_URL` in `frontend/.env`.
+App: `http://localhost:5173`
+
+If the API is not on port 8000, set **`VITE_API_BASE_URL`** in `frontend/.env` and restart Vite. The backend allows **both** `http://localhost:5173` and `http://127.0.0.1:5173` for local dev so either URL in the browser works with CORS.
 
 ---
 
-## Tests and production build
+## Tests and CI
+
+Local:
 
 ```bash
 cd backend && source venv/bin/activate && pytest
 cd frontend && npm run build
 ```
 
-On GitHub, **Actions → CI** runs the same pytest suite and `npm run build` on each push (see `.github/workflows/ci.yml`).
-
-**Transaction dates** must fall between **1970-01-01** and **2100-12-31** (API validation + browser date pickers). That blocks typos like year `22026` without forbidding near-future trades.
+GitHub **Actions** (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the same pytest job and a production `npm run build` on push and pull request.
 
 ---
 
-## API (summary)
+## API (short)
 
-| Method | Path | Notes |
-| ------ | ---- | ----- |
+| Method | Path | Role |
+| ------ | ---- | ---- |
 | GET | `/health` | Liveness |
-| POST | `/demo/seed` | Wipes `transactions`, inserts demo rows |
+| POST | `/demo/seed` | Wipe `transactions`, insert demo set |
 | POST | `/transactions` | Create buy/sell |
-| GET | `/transactions` | Newest first |
-| GET | `/transactions/export` | CSV; optional `?ticker=` |
+| GET | `/transactions` | List all, newest first |
+| GET | `/transactions/export` | CSV download; optional `?ticker=` |
 | GET | `/transactions/{ticker}` | One ticker |
-| PATCH / DELETE | `/transactions/{id}` | `{id}` = ObjectId string |
+| PATCH / DELETE | `/transactions/{id}` | `{id}` = Mongo ObjectId string |
 | GET | `/holdings` | Holdings JSON |
 | GET | `/portfolio` | Summary + assets + `warnings` |
-| GET | `/performance` | Daily value; optional `from`, `to` (`YYYY-MM-DD`) |
-| GET | `/benchmark` | Cumulative % vs SPY; same date range |
+| GET | `/performance` | Daily `{ date, portfolio_value }`; optional `from`, `to` (`YYYY-MM-DD`) |
+| GET | `/benchmark` | Cumulative % vs SPY on the same dates |
 
 Errors return JSON with `error`, `status_code`, and `detail`.
 
 ---
 
-## Demo seed rows
+## Demo seed (what `/demo/seed` inserts)
 
 | Ticker | Type | Qty | Price | Date | Memo |
 | ------ | ---- | --- | ----- | ---- | ---- |
@@ -106,33 +111,21 @@ Errors return JSON with `error`, `status_code`, and `detail`.
 
 ## Environment
 
-| Variable | Required | Default | Role |
-| -------- | -------- | ------- | ---- |
-| `MONGO_URI` | For real DB | — | Mongo connection string |
+| Variable | Required | Default | Purpose |
+| -------- | -------- | ------- | ------- |
+| `MONGO_URI` | For a real DB | — | Mongo connection string |
 | `MONGO_DB_NAME` | No | `portfolio_tracker` | Database name |
-| `FRONTEND_ORIGIN` | No | `http://localhost:5173` | CORS |
-| `VITE_API_BASE_URL` | No | `http://localhost:8000` | Frontend → API |
+| `FRONTEND_ORIGIN` | No | `http://localhost:5173` | CORS (comma-separated list allowed) |
+| `VITE_API_BASE_URL` | No | `http://localhost:8000` | Where the browser calls the API |
 
-Quotes are cached for 60 seconds on the server to ease rate limits.
-
----
-
-## Behavior notes
-
-- Single global ledger (no login).
-- Holdings use weighted-average buy price; sells reduce shares only.
-- Benchmark ticker is **SPY** in code; swap there if you want another index fund.
-- Yahoo data can be sparse or slow; the API still returns JSON and may add **warnings** when a live quote fails.
-- **Performance / benchmark** charts use a window through the **latest transaction date**, even if that date is still in the future, so the lines are not empty when all trades are dated “tomorrow.” Yahoo may still omit prices for true future calendar days until the market prints a bar.
-- The backend asks Yahoo for **extra days before** your first trade so very new or single-day portfolios still get enough bars to plot.
-- If Yahoo still returns **no usable daily bars**, the app draws a **flat line at your live portfolio value** (same math as the summary cards) so the charts are never empty when you hold positions; the benchmark line shows **0% for SPY** in that fallback. True history still appears whenever Yahoo cooperates.
+Server-side quote cache TTL is **60 seconds** to ease Yahoo rate limits.
 
 ---
 
 ## Troubleshooting
 
-**MongoDB:** Allow your IP in Atlas **Network Access**; check user/password in `MONGO_URI`. The backend uses **certifi** for TLS; set `SSL_CERT_FILE` if your environment needs a different CA bundle.
+**MongoDB:** Atlas **Network Access** must allow your IP; user/password in the URI must match **Database Access**. The app loads **certifi** for TLS; set `SSL_CERT_FILE` if your machine needs a different CA bundle.
 
-**Charts:** If history is empty, wait and retry or reduce tickers; Yahoo throttling happens sometimes.
+**“Could not load data: Failed to fetch”:** API not running, wrong `VITE_API_BASE_URL`, or browser blocked the call. Start `uvicorn`, match the URL to the port you use, restart `npm run dev` after editing `frontend/.env`, hard-refresh the tab.
 
-**“Could not load data: Failed to fetch”:** The API is unreachable or CORS blocked the browser. Confirm `uvicorn` is running, `VITE_API_BASE_URL` matches the API (default `http://localhost:8000`), and restart `npm run dev` after changing any `frontend/.env`. The backend allows both `http://localhost:5173` and `http://127.0.0.1:5173` for local Vite.
+**Charts flat or slow:** Yahoo throttling or gaps; wait and retry. Use **past** trade dates for the most reliable history. Clear the chart **From/To** fields and click **Apply** if you narrowed the window too far.

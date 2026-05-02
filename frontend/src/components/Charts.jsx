@@ -35,7 +35,7 @@ function PortfolioValueChart({ data, hasHoldings }) {
     return (
       <div className="empty-state">
         {hasHoldings
-          ? "No chart points yet. Restart the API after an update, clear the chart date filter, or wait a minute—otherwise check the browser network tab."
+          ? "No series returned—hard-refresh the page, clear chart dates and Apply, or confirm the API is running."
           : "Add a transaction to see portfolio history."}
       </div>
     );
@@ -68,7 +68,7 @@ function BenchmarkChart({ data, hasHoldings }) {
     return (
       <div className="empty-state">
         {hasHoldings
-          ? "Benchmark needs the same daily history as the portfolio chart. If that chart is empty, fix trade dates or wait for Yahoo; then this chart fills in."
+          ? "Uses the same dates as the portfolio chart above; refresh if it stays empty."
           : "Benchmark data will appear once price history is available."}
       </div>
     );

@@ -63,7 +63,7 @@ def _performance_fallback_line(
     window_start: date,
     window_end: date,
 ) -> list[dict]:
-    """Flat line at live portfolio value when Yahoo daily history is missing."""
+    """Two points at live mark-to-market when daily history is missing."""
     timelines = _quantity_timeline(tx_list)
     if not timelines:
         return []
@@ -79,7 +79,7 @@ def _performance_fallback_line(
 
 
 def _benchmark_without_spy_series(performance: list[dict], first_value: float) -> list[dict]:
-    """Cumulative portfolio % vs SPY; SPY unavailable → benchmark leg is 0%."""
+    """Portfolio % vs first day; SPY leg set to 0% when SPY history is missing."""
     return [
         {
             "date": p["date"],
@@ -117,8 +117,7 @@ def compute_performance(
     if earliest is None or latest is None:
         return []
     today = date.today()
-    # Extend through the latest ledger date, not only "today", so future-dated
-    # rows (e.g. user picks tomorrow) still get a non-empty chart window.
+    # Through max(today, last trade) so future-dated rows still have a valid window.
     ledger_end = max(today, latest)
     window_start = max(earliest, from_date) if from_date else earliest
     if to_date is not None:
@@ -132,8 +131,7 @@ def compute_performance(
     if not timelines:
         return []
 
-    # Pull extra calendar history before the ledger window so yfinance has prior
-    # bars to align on (single-day / very new portfolios often return empty otherwise).
+    # Extra lookback so Yahoo usually returns at least a few bars for thin windows.
     fetch_pad = timedelta(days=120)
     fetch_start = window_start - fetch_pad
     if fetch_start < date(1970, 1, 1):
@@ -188,7 +186,7 @@ def compute_performance(
 
 
 def compute_benchmark(performance: list[dict]) -> list[dict]:
-    """Cumulative % return for the portfolio vs SPY on the same dates."""
+    """Cumulative % return vs SPY on the same dates as the performance series."""
     if not performance:
         return []
 
