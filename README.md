@@ -107,6 +107,7 @@ cd frontend && npm run build
 | POST | `/demo/seed` | Delete all transactions, insert demo set |
 | POST | `/transactions` | Create buy/sell |
 | GET | `/transactions` | List all (newest first) |
+| GET | `/transactions/export` | CSV download; optional query `ticker` |
 | GET | `/transactions/{ticker}` | List for one ticker (uppercased) |
 | PATCH | `/transactions/{id}` | Partial update; `{id}` = Mongo ObjectId |
 | DELETE | `/transactions/{id}` | Delete by ObjectId |

@@ -4,12 +4,14 @@ from datetime import datetime
 
 from bson import ObjectId
 from bson.errors import InvalidId
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import Response
 
 from app.database import get_transactions_collection
 from app.models import TransactionCreate, TransactionUpdate
 from app.services.holdings import calculate_holdings, current_quantity
 from app.utils.serializers import serialize_transaction
+from app.utils.transaction_csv import transactions_csv_bytes
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -52,6 +54,21 @@ def list_transactions():
         serialize_transaction(doc)
         for doc in collection.find({}).sort([("date", -1), ("created_at", -1)])
     ]
+
+
+@router.get("/export")
+def export_transactions_csv(ticker: str | None = Query(None, description="Optional ticker filter")):
+    collection = get_transactions_collection()
+    symbol = (ticker or "").strip().upper() or None
+    query = {"ticker": symbol} if symbol else {}
+    docs = collection.find(query).sort([("date", -1), ("created_at", -1)])
+    rows = [serialize_transaction(doc) for doc in docs]
+    body, filename = transactions_csv_bytes(rows, ticker_filter=symbol)
+    return Response(
+        content=body,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/{ticker}")

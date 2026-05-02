@@ -181,6 +181,30 @@ def test_patch_unknown_id_returns_404(client):
     assert response.status_code == 404
 
 
+def test_export_transactions_csv_all(client):
+    _create_buy(client, ticker="AAPL", quantity=1, price=10, date="2024-01-10")
+    _create_buy(client, ticker="MSFT", quantity=2, price=20, date="2024-02-01")
+    response = client.get("/transactions/export")
+    assert response.status_code == 200
+    assert "text/csv" in response.headers.get("content-type", "")
+    text = response.content.decode("utf-8-sig")
+    lines = text.strip().splitlines()
+    assert lines[0] == "id,ticker,transaction_type,quantity,price,date,memo,created_at"
+    assert len(lines) == 3
+
+
+def test_export_transactions_csv_filtered_by_ticker(client):
+    _create_buy(client, ticker="AAPL", quantity=1, price=10, date="2024-01-10")
+    _create_buy(client, ticker="MSFT", quantity=2, price=20, date="2024-02-01")
+    response = client.get("/transactions/export?ticker=MSFT")
+    assert response.status_code == 200
+    text = response.content.decode("utf-8-sig")
+    lines = [ln for ln in text.strip().splitlines() if ln]
+    assert len(lines) == 2
+    assert "MSFT" in lines[1]
+    assert "AAPL" not in lines[1]
+
+
 def test_patch_oversell_after_edit_rejected(client):
     _create_buy(client, ticker="TSLA", quantity=3, price=220, date="2024-04-05")
     sell = client.post(
