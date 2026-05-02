@@ -28,3 +28,25 @@ def serialize_transaction(doc: dict) -> dict:
         "memo": memo,
         "created_at": _stringify(doc.get("created_at", "")) or "",
     }
+
+def serialize_alert(doc: dict) -> dict:
+    """Convert a Mongo alert doc to a JSON-friendly dict.
+    Mirrors serialize_transaction: _id (ObjectId) -> id (str)."""
+    return {
+        "id": str(doc["_id"]),
+        "ticker": doc["ticker"],
+        "direction": doc["direction"],
+        "threshold": doc["threshold"],
+        "active": doc["active"],
+        "created_at": (
+            doc["created_at"].isoformat()
+            if hasattr(doc.get("created_at"), "isoformat")
+            else doc.get("created_at")
+        ),
+        "triggered_at": (
+            doc["triggered_at"].isoformat()
+            if hasattr(doc.get("triggered_at"), "isoformat")
+            else doc.get("triggered_at")
+        ),
+        "note": doc.get("note"),
+    }
