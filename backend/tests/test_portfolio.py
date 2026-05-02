@@ -212,10 +212,9 @@ def test_benchmark_empty_when_no_transactions(client):
     assert response.json() == []
 
 
-def test_performance_and_benchmark_empty_when_historical_quotes_fail(
-    client, monkeypatch,
-):
-    _create_buy(client, "AAPL", 10, 100, "2024-01-10")
+def test_performance_fallback_when_historical_quotes_fail(client, monkeypatch):
+    """No Yahoo history → flat line at live mark-to-market (still chartable)."""
+    _create_buy(client, "AAPL", 2, 25, "2024-01-10")
 
     def boom(*_args, **_kwargs):
         raise ValueError("no quote")
@@ -223,8 +222,15 @@ def test_performance_and_benchmark_empty_when_historical_quotes_fail(
     monkeypatch.setattr(
         performance_service.prices, "get_historical_close", boom
     )
-    assert client.get("/performance").json() == []
-    assert client.get("/benchmark").json() == []
+    monkeypatch.setattr(
+        performance_service.prices, "get_current_price", lambda _t: 50.0
+    )
+    perf = client.get("/performance").json()
+    assert len(perf) == 2
+    assert all(row["portfolio_value"] == 100.0 for row in perf)
+    bench = client.get("/benchmark").json()
+    assert len(bench) == 2
+    assert all(b["benchmark_return"] == 0.0 for b in bench)
 
 
 def test_benchmark_filters_by_date_range(client, monkeypatch):

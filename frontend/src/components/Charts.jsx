@@ -35,7 +35,7 @@ function PortfolioValueChart({ data, hasHoldings }) {
     return (
       <div className="empty-state">
         {hasHoldings
-          ? "No history series yet. Yahoo may be slow, your trade dates may be in the future, or the chart date filter may be too narrow—try Clear on the dates, use past trade dates, and refresh in a minute."
+          ? "No chart points yet. Restart the API after an update, clear the chart date filter, or wait a minute—otherwise check the browser network tab."
           : "Add a transaction to see portfolio history."}
       </div>
     );

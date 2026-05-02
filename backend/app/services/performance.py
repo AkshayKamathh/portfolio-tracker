@@ -6,7 +6,7 @@ from typing import Iterable
 import pandas as pd
 
 from app.services import prices
-from app.services.holdings import _to_date, _sort_key
+from app.services.holdings import _to_date, _sort_key, calculate_holdings
 
 
 def _earliest_date(transactions: list[dict]) -> date | None:
@@ -44,6 +44,50 @@ def _quantity_timeline(transactions: list[dict]) -> dict[str, list[tuple[date, f
         timeline.setdefault(ticker, []).append((d, current))
 
     return timeline
+
+
+def _live_portfolio_market_value(transactions: list[dict]) -> float:
+    """Same notion of total value as /portfolio (live quote, avg buy fallback)."""
+    total = 0.0
+    for h in calculate_holdings(transactions):
+        try:
+            px = prices.get_current_price(h["ticker"])
+        except Exception:
+            px = h["avg_buy_price"]
+        total += h["quantity"] * float(px)
+    return round(total, 2)
+
+
+def _performance_fallback_line(
+    tx_list: list[dict],
+    window_start: date,
+    window_end: date,
+) -> list[dict]:
+    """Flat line at live portfolio value when Yahoo daily history is missing."""
+    timelines = _quantity_timeline(tx_list)
+    if not timelines:
+        return []
+    mv = _live_portfolio_market_value(tx_list)
+    if mv <= 0:
+        return []
+    d0 = window_start
+    d1 = window_end if window_end > window_start else window_start + timedelta(days=1)
+    return [
+        {"date": d0.isoformat(), "portfolio_value": mv},
+        {"date": d1.isoformat(), "portfolio_value": mv},
+    ]
+
+
+def _benchmark_without_spy_series(performance: list[dict], first_value: float) -> list[dict]:
+    """Cumulative portfolio % vs SPY; SPY unavailable → benchmark leg is 0%."""
+    return [
+        {
+            "date": p["date"],
+            "portfolio_return": round((p["portfolio_value"] / first_value - 1) * 100, 2),
+            "benchmark_return": 0.0,
+        }
+        for p in performance
+    ]
 
 
 def _quantity_on(timeline: list[tuple[date, float]], target: date) -> float:
@@ -85,6 +129,9 @@ def compute_performance(
         return []
 
     timelines = _quantity_timeline(tx_list)
+    if not timelines:
+        return []
+
     # Pull extra calendar history before the ledger window so yfinance has prior
     # bars to align on (single-day / very new portfolios often return empty otherwise).
     fetch_pad = timedelta(days=120)
@@ -102,12 +149,12 @@ def compute_performance(
             continue
 
     if not closes:
-        return []
+        return _performance_fallback_line(tx_list, window_start, window_end)
 
     # Shared calendar across tickers; forward-fill so missing days are not zeroed out.
     idx = pd.Index(sorted({d for series in closes.values() for d in series.index}))
     if idx.empty:
-        return []
+        return _performance_fallback_line(tx_list, window_start, window_end)
 
     aligned: dict[str, pd.Series] = {}
     for ticker, series in closes.items():
@@ -134,6 +181,9 @@ def compute_performance(
             total += qty * float(close)
         points.append({"date": d_str, "portfolio_value": round(total, 2)})
 
+    if not points:
+        return _performance_fallback_line(tx_list, window_start, window_end)
+
     return points
 
 
@@ -153,20 +203,20 @@ def compute_benchmark(performance: list[dict]) -> list[dict]:
     try:
         spy_raw = prices.get_historical_close("SPY", start_str, end_str)
     except Exception:
-        return []
+        return _benchmark_without_spy_series(performance, first_value)
 
     if spy_raw.empty:
-        return []
+        return _benchmark_without_spy_series(performance, first_value)
 
     # Reindex SPY to portfolio dates and forward-fill missing bars.
     perf_dates = pd.Index([p["date"] for p in performance])
     spy = spy_raw.reindex(perf_dates).ffill()
     if spy.empty:
-        return []
+        return _benchmark_without_spy_series(performance, first_value)
 
     first_spy = next((float(v) for v in spy if v and not pd.isna(v)), None)
     if not first_spy:
-        return []
+        return _benchmark_without_spy_series(performance, first_value)
 
     result: list[dict] = []
     for p in performance:

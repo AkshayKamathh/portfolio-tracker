@@ -124,7 +124,8 @@ Quotes are cached for 60 seconds on the server to ease rate limits.
 - Benchmark ticker is **SPY** in code; swap there if you want another index fund.
 - Yahoo data can be sparse or slow; the API still returns JSON and may add **warnings** when a live quote fails.
 - **Performance / benchmark** charts use a window through the **latest transaction date**, even if that date is still in the future, so the lines are not empty when all trades are dated “tomorrow.” Yahoo may still omit prices for true future calendar days until the market prints a bar.
-- The backend asks Yahoo for **extra days before** your first trade so very new or single-day portfolios still get enough bars to plot; allocation can still work when history is temporarily empty.
+- The backend asks Yahoo for **extra days before** your first trade so very new or single-day portfolios still get enough bars to plot.
+- If Yahoo still returns **no usable daily bars**, the app draws a **flat line at your live portfolio value** (same math as the summary cards) so the charts are never empty when you hold positions; the benchmark line shows **0% for SPY** in that fallback. True history still appears whenever Yahoo cooperates.
 
 ---
 
