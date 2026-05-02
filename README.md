@@ -1,32 +1,53 @@
 # Portfolio Tracker
 
-A full-stack portfolio tracking dashboard for stocks and crypto. Built as a CS122 semester project.
+CS122 semester project — full-stack app to log stock/crypto trades, persist them in MongoDB Atlas, and visualize portfolio value, holdings, and a benchmark vs the S&P 500 (via SPY).
 
-## Team Members
+**Team:** Akshay K, Arsen K, Stefan L
 
-- Akshay K
-- Arsen K
-- Stefan L
+---
 
-## Description
+## What it does today
 
-Portfolio Tracker lets a user record buy/sell transactions for stocks and crypto, stores them in MongoDB Atlas, and turns them into useful analytics: current holdings, weighted-average cost basis, live market value, gain/loss, historical portfolio value, and a head-to-head comparison against the S&P 500. The frontend is a clean React dashboard powered by Vite and Recharts.
+| Layer | Behavior |
+| ----- | -------- |
+| **Transactions** | Create buy/sell with ticker, quantity, price, date, optional **memo** (500 chars max). **Edit** (PATCH) and **delete** by MongoDB id. **Oversell** blocked on create and on edit (full ledger re-checked). |
+| **Lists** | All transactions sorted newest first; **filter by ticker**; optional **CSV export** of whatever is on screen (includes memo). |
+| **Demo** | **Load demo data** in the UI or `POST /demo/seed` — wipes the `transactions` collection and inserts six fixed rows (see table below). First AAPL buy includes a sample memo. |
+| **Analytics** | **Holdings:** quantity, weighted-average buy price, cost basis. **Portfolio:** live prices via **yfinance**, market value, gain/loss, return %; **warnings** if a quote fails (falls back to avg buy). **Performance:** daily portfolio value from history. **Benchmark:** cumulative % vs SPY on the same dates. **Charts:** value over time, benchmark lines, allocation pie. |
+| **Quality** | **PyTest** with an in-memory fake Mongo collection and mocked prices — **no Atlas required** to run tests. |
 
-## Quickstart (macOS)
+**Out of scope:** logins, multi-user, tax lots, broker CSV import, dividends/cash ledger.
 
-### Prerequisites
+---
 
-- Python 3.10+
-- Node.js + npm
-- A MongoDB Atlas connection string (`MONGO_URI`)
+## Try it in five minutes (self-serve)
 
-Tip: point `core.excludesfile` at a global ignore file so editor cache folders under the repo never show up in `git status`.
+1. Follow **Setup** below until the API and Vite app both run.
+2. Open `http://localhost:5173` → click **Load demo data** → confirm summary, charts, and holdings populate.
+3. Use **Filter by ticker** (e.g. `AAPL`) → **Export CSV** → open the file in Excel or Numbers.
+4. Add a small **buy**, then a **sell** below your position — confirm oversell is rejected.
+5. Optional: open `http://127.0.0.1:8000/docs` and call the same endpoints with **Try it out**.
 
-### 1) Backend (FastAPI)
+---
 
-From the repo root:
+## Stack
 
-```
+| Layer | Tools |
+| ----- | ----- |
+| Backend | Python 3.10+, FastAPI, Pydantic v2, PyMongo, Pandas, yfinance |
+| Database | MongoDB Atlas (`MONGO_URI`) |
+| Frontend | React 18, Vite, Recharts, plain CSS |
+| Tests | PyTest, Starlette `TestClient`, in-memory `FakeCollection` |
+
+---
+
+## Setup (macOS)
+
+**Prerequisites:** Python 3.10+, Node 18+, MongoDB Atlas URI.
+
+**Backend**
+
+```bash
 cd backend
 python -m venv venv
 source venv/bin/activate
@@ -34,194 +55,136 @@ pip install -r requirements.txt
 cp ../.env.example .env
 ```
 
-Edit `backend/.env` and set `MONGO_URI` to your Atlas URI (see `.env.example` for the format).
+Edit `backend/.env`: set **`MONGO_URI`** (see `.env.example`). Optional: `MONGO_DB_NAME`, `FRONTEND_ORIGIN`, or `SSL_CERT_FILE` if TLS issues on your machine.
 
-Start the API:
-
-```
+```bash
 uvicorn app.main:app --reload
 ```
 
-The API runs at `http://127.0.0.1:8000`. Docs are at `http://127.0.0.1:8000/docs`.
+API: `http://127.0.0.1:8000` — interactive docs: `/docs`.
 
-### 2) Frontend (Vite/React)
+**Frontend** (second terminal)
 
-In a second terminal from the repo root:
-
-```
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Open the dashboard at `http://localhost:5173`.
+App: `http://localhost:5173` — set **`VITE_API_BASE_URL`** in `frontend/.env` if the API is not on port 8000.
 
-## Verification checklist
+---
 
-### Backend health
+## Quick checks
 
-```
+```bash
 curl http://127.0.0.1:8000/health
-```
+# → {"status":"ok"}
 
-Expected:
-
-```
-{"status":"ok"}
-```
-
-### Seed demo data (optional, recommended for first run)
-
-This resets the `transactions` collection and inserts the demo transactions listed below.
-
-```
 curl -X POST http://127.0.0.1:8000/demo/seed
+# → seeds demo rows (clears existing transactions first)
 ```
 
-Then refresh the dashboard. You should see populated holdings and charts.
+**Tests** (no live MongoDB):
 
-## Features
-
-- Add buy/sell transactions with ticker, quantity, price, date, and optional memo (up to 500 characters)
-- Server-side oversell prevention (cannot sell more than you own)
-- View all transactions, filter by ticker, edit or delete by id, export the current list as CSV
-- Automatic holdings calculation with weighted-average buy price
-- Live prices via `yfinance` (works for stocks like `AAPL` and crypto like `BTC-USD`)
-- Portfolio summary: total value, cost basis, gain/loss, return %
-- Historical portfolio value over time
-- S&P 500 (SPY) benchmark comparison on cumulative return
-- Asset allocation pie chart
-- Polished dashboard UI with responsive grid, soft shadows, and green/red money colors
-- PyTest suite that runs without a live MongoDB connection
-
-## Tech Stack
-
-| Layer    | Tools                                                              |
-| -------- | ------------------------------------------------------------------ |
-| Backend  | Python 3.10+, FastAPI, PyMongo, Pydantic v2, Pandas, yfinance      |
-| Database | MongoDB Atlas                                                      |
-| Frontend | React, Vite, Recharts, plain CSS                                   |
-| Testing  | PyTest, FastAPI TestClient (with an in-memory fake collection)     |
-
-## Folder Structure
-
-```
-portfolio-tracker/
-  README.md
-  .gitignore
-  .env.example
-  backend/
-    requirements.txt
-    pytest.ini
-    app/
-      __init__.py
-      main.py
-      config.py
-      database.py
-      models.py
-      routes/
-        __init__.py
-        transactions.py
-        portfolio.py
-      services/
-        __init__.py
-        holdings.py
-        prices.py
-        performance.py
-      utils/
-        __init__.py
-        serializers.py
-    tests/
-      conftest.py
-      test_holdings.py
-      test_transactions.py
-      test_portfolio.py
-  frontend/
-    package.json
-    index.html
-    vite.config.js
-    src/
-      main.jsx
-      App.jsx
-      api.js
-      styles.css
-      components/
-        TransactionForm.jsx
-        SummaryCards.jsx
-        Charts.jsx
-        AssetTable.jsx
-        TransactionTable.jsx
+```bash
+cd backend && source venv/bin/activate && pytest
 ```
 
-## Tests
+**Frontend build:**
 
-The backend test suite runs without a live MongoDB connection (it uses an in-memory fake collection and monkeypatched price/history functions).
-
-```
-cd backend
-source venv/bin/activate
-pytest
+```bash
+cd frontend && npm run build
 ```
 
-## Environment Variables
+---
 
-| Variable             | Required          | Default                         | Notes                                                  |
-| -------------------- | ----------------- | ------------------------------- | ------------------------------------------------------ |
-| `MONGO_URI`          | Yes (real backend) | _empty_                        | MongoDB Atlas connection string                        |
-| `MONGO_DB_NAME`      | No                | `portfolio_tracker`             | Database name                                          |
-| `FRONTEND_ORIGIN`    | No                | `http://localhost:5173`         | Used for CORS allow-list                               |
-| `VITE_API_BASE_URL`  | No                | `http://localhost:8000`         | URL the frontend uses to call the backend              |
+## API (summary)
 
-`MONGO_URI` is the only secret you need. No paid stock API key is required because [`yfinance`](https://github.com/ranaroussi/yfinance) is used to pull prices from Yahoo Finance.
+| Method | Path | Purpose |
+| ------ | ---- | ------- |
+| GET | `/health` | Liveness |
+| POST | `/demo/seed` | Delete all transactions, insert demo set |
+| POST | `/transactions` | Create buy/sell |
+| GET | `/transactions` | List all (newest first) |
+| GET | `/transactions/{ticker}` | List for one ticker (uppercased) |
+| PATCH | `/transactions/{id}` | Partial update; `{id}` = Mongo ObjectId |
+| DELETE | `/transactions/{id}` | Delete by ObjectId |
+| GET | `/holdings` | Holdings JSON only (same math as portfolio; UI uses `/portfolio`) |
+| GET | `/portfolio` | Summary + per-asset rows + `warnings` |
+| GET | `/performance` | `[{ date, portfolio_value }, ...]` |
+| GET | `/benchmark` | `[{ date, portfolio_return, benchmark_return }, ...]` |
 
-## Demo Data
+Errors return JSON: `error`, `status_code`, `detail`.
 
-Use these transactions to recreate the demo dataset:
+---
 
-| Ticker  | Type | Quantity | Price | Date       |
-| ------- | ---- | -------- | ----- | ---------- |
-| AAPL    | buy  | 10       | 150   | 2024-01-10 |
-| AAPL    | buy  | 5        | 170   | 2024-03-15 |
-| MSFT    | buy  | 4        | 300   | 2024-02-20 |
-| TSLA    | buy  | 3        | 220   | 2024-04-05 |
-| BTC-USD | buy  | 0.05     | 65000 | 2024-04-10 |
-| AAPL    | sell | 2        | 190   | 2024-05-01 |
+## Demo seed rows
 
-## API Endpoints
+`POST /demo/seed` replaces **all** documents in `transactions` with:
 
-| Method | Path                       | Description                                            |
-| ------ | -------------------------- | ------------------------------------------------------ |
-| GET    | `/health`                  | Liveness check                                         |
-| POST   | `/demo/seed`               | Clear DB + insert demo transactions                    |
-| POST   | `/transactions`            | Create a buy or sell transaction                       |
-| GET    | `/transactions`            | List all transactions, newest first                    |
-| GET    | `/transactions/{ticker}`   | List transactions for one ticker                       |
-| PATCH  | `/transactions/{id}`       | Update fields on a transaction (oversell rules apply)   |
-| DELETE | `/transactions/{id}`       | Delete a transaction by Mongo ObjectId                 |
-| GET    | `/holdings`                | Current per-ticker holdings derived from transactions  |
-| GET    | `/portfolio`               | Full portfolio summary with live prices                |
-| GET    | `/performance`             | Historical portfolio value over time                   |
-| GET    | `/benchmark`               | Cumulative return vs S&P 500 (SPY)                     |
+| Ticker | Type | Qty | Price | Date | Memo (if any) |
+| ------ | ---- | --- | ----- | ---- | ------------- |
+| AAPL | buy | 10 | 150 | 2024-01-10 | First tranche |
+| AAPL | buy | 5 | 170 | 2024-03-15 | |
+| MSFT | buy | 4 | 300 | 2024-02-20 | |
+| TSLA | buy | 3 | 220 | 2024-04-05 | |
+| BTC-USD | buy | 0.05 | 65000 | 2024-04-10 | |
+| AAPL | sell | 2 | 190 | 2024-05-01 | |
 
-## Technical notes
+---
 
-- Single-user scope: no login or multi-user accounts.
-- Backend tests use an in-memory `FakeCollection` plus `monkeypatch` instead of a live database.
-- Price lookups use a 60-second in-memory cache to limit Yahoo Finance traffic.
-- If a live quote is missing, `/portfolio` falls back to average buy price and adds a warning string to the JSON.
-- Benchmark uses `SPY` as the S&P 500 proxy; switch to `^GSPC` in `app/services/performance.py` if you want the cash index.
-- Holdings use weighted-average buy price only; realized gain on sells is not modeled separately.
+## Environment
 
-## Troubleshooting (common setup issues)
+| Variable | Required for real API | Default | Notes |
+| -------- | --------------------- | ------- | ----- |
+| `MONGO_URI` | Yes | — | Atlas connection string |
+| `MONGO_DB_NAME` | No | `portfolio_tracker` | Database name |
+| `FRONTEND_ORIGIN` | No | `http://localhost:5173` | CORS |
+| `VITE_API_BASE_URL` | No | `http://localhost:8000` | Frontend → API |
 
-### MongoDB Atlas connection errors
+Prices come from **Yahoo Finance via yfinance** (no paid market data key). The backend caches quotes for **60 seconds** to reduce rate limits.
 
-If endpoints like `/transactions` time out or return a Mongo connection error:
+---
 
-- Confirm your Atlas **Network Access** allows your current IP address.
-- Confirm your Atlas **Database Access** user/password match your `MONGO_URI`.
-- Ensure you replaced placeholders like `<password>` / angle brackets in the URI.
+## Repo layout (main paths)
 
-### yfinance / Yahoo Finance limitations
+```
+backend/app/
+  main.py              # CORS, routers, exception handlers
+  config.py            # env
+  database.py          # Mongo client (lazy), certifi TLS
+  models.py            # Pydantic request/response models
+  routes/
+    transactions.py    # CRUD + PATCH
+    portfolio.py       # holdings, portfolio, performance, benchmark
+    demo.py            # /demo/seed
+  services/
+    holdings.py        # weighted avg cost, qty
+    prices.py          # yfinance + TTL cache
+    performance.py     # history + SPY benchmark
+  utils/serializers.py
+backend/tests/         # conftest FakeCollection + route tests
+frontend/src/
+  App.jsx
+  api.js
+  components/          # form, tables, charts, summary cards
+  utils/exportTransactionsCsv.js
+```
 
-If charts look sparse or benchmark data is missing, it can be due to Yahoo Finance rate limiting or missing historical data for a ticker on certain dates. The backend is designed to return valid JSON and avoid crashing in these cases, but the chart may have fewer points.
+---
+
+## Behavior and limits
+
+- **Single user:** no auth; one global transaction list.
+- **Holdings:** weighted-average buy price; sells reduce shares only (no separate realized gain line item).
+- **Benchmark:** **SPY** only in code (`performance.py`); change ticker there if you want another proxy.
+- **yfinance:** throttling or gaps can shorten charts; `/portfolio` still returns JSON and may include **warnings**.
+
+---
+
+## Troubleshooting
+
+**MongoDB:** Atlas **Network Access** must allow your IP; **Database Access** user/password must match `MONGO_URI`; replace placeholders like `<password>` in the URI. TLS: backend uses **certifi** by default; override with `SSL_CERT_FILE` if needed.
+
+**Charts empty or sparse:** Yahoo data or rate limits; try again after a minute or use fewer tickers.
