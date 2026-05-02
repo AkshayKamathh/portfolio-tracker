@@ -15,6 +15,7 @@ export function downloadTransactionsCsv(transactions, filename) {
     "quantity",
     "price",
     "date",
+    "memo",
     "created_at",
   ];
   const lines = [

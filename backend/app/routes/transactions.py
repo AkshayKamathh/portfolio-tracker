@@ -38,6 +38,8 @@ def create_transaction(payload: TransactionCreate):
         "date": payload.date.isoformat(),
         "created_at": datetime.utcnow(),
     }
+    if payload.memo:
+        doc["memo"] = payload.memo
     result = collection.insert_one(doc)
     doc["_id"] = result.inserted_id
     return serialize_transaction(doc)
@@ -77,6 +79,8 @@ def _merge_transaction_update(existing: dict, patch: dict) -> dict:
     if "date" in patch:
         d = patch["date"]
         merged["date"] = d.isoformat() if hasattr(d, "isoformat") else d
+    if "memo" in patch:
+        merged["memo"] = patch["memo"] or ""
     return merged
 
 
@@ -115,6 +119,8 @@ def update_transaction(transaction_id: str, payload: TransactionUpdate):
         set_fields["price"] = merged["price"]
     if "date" in updates:
         set_fields["date"] = merged["date"]
+    if "memo" in updates:
+        set_fields["memo"] = merged.get("memo", "")
 
     collection.update_one({"_id": oid}, {"$set": set_fields})
     updated = collection.find_one({"_id": oid})

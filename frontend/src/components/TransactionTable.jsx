@@ -57,6 +57,7 @@ export default function TransactionTable({
             <th>Quantity</th>
             <th>Price</th>
             <th>Date</th>
+            <th>Memo</th>
             <th></th>
           </tr>
         </thead>
@@ -68,6 +69,12 @@ export default function TransactionTable({
               <td>{fmtQty(tx.quantity)}</td>
               <td>{fmtMoney(tx.price)}</td>
               <td>{tx.date}</td>
+              <td
+                className="memo-cell"
+                title={tx.memo || undefined}
+              >
+                {tx.memo || "—"}
+              </td>
               <td>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
                   {onEdit && (

@@ -82,7 +82,7 @@ Then refresh the dashboard. You should see populated holdings and charts.
 
 ## Features
 
-- Add buy/sell transactions with ticker, quantity, price, and date
+- Add buy/sell transactions with ticker, quantity, price, date, and optional memo (up to 500 characters)
 - Server-side oversell prevention (cannot sell more than you own)
 - View all transactions, filter by ticker, edit or delete by id, export the current list as CSV
 - Automatic holdings calculation with weighted-average buy price

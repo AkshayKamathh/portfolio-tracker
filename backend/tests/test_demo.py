@@ -54,3 +54,8 @@ def test_seed_demo_holdings_math(client):
     assert by_ticker["BTC-USD"]["avg_buy_price"] == 65000.0
     assert by_ticker["BTC-USD"]["cost_basis"] == 3250.0
 
+
+def test_demo_seed_includes_memo_on_first_row(client):
+    client.post("/demo/seed")
+    txs = client.get("/transactions").json()
+    assert any(tx.get("memo") == "First tranche" for tx in txs)

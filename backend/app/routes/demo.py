@@ -13,7 +13,14 @@ router = APIRouter(prefix="/demo", tags=["demo"])
 
 
 DEMO_TRANSACTIONS = [
-    {"ticker": "AAPL", "transaction_type": "buy", "quantity": 10, "price": 150, "date": "2024-01-10"},
+    {
+        "ticker": "AAPL",
+        "transaction_type": "buy",
+        "quantity": 10,
+        "price": 150,
+        "date": "2024-01-10",
+        "memo": "First tranche",
+    },
     {"ticker": "AAPL", "transaction_type": "buy", "quantity": 5, "price": 170, "date": "2024-03-15"},
     {"ticker": "MSFT", "transaction_type": "buy", "quantity": 4, "price": 300, "date": "2024-02-20"},
     {"ticker": "TSLA", "transaction_type": "buy", "quantity": 3, "price": 220, "date": "2024-04-05"},
@@ -37,6 +44,8 @@ def seed_demo_transactions():
             "date": tx["date"],
             "created_at": datetime.utcnow(),
         }
+        if tx.get("memo"):
+            doc["memo"] = tx["memo"]
         result = collection.insert_one(doc)
         doc["_id"] = result.inserted_id
         inserted.append(serialize_transaction(doc))

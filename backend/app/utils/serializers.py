@@ -16,6 +16,8 @@ def serialize_transaction(doc: dict) -> dict:
     """Convert a transaction document into an API-safe dict."""
     if doc is None:
         return {}
+    raw_memo = doc.get("memo", "")
+    memo = raw_memo.strip() if isinstance(raw_memo, str) else ""
     return {
         "id": str(doc["_id"]),
         "ticker": doc.get("ticker", ""),
@@ -23,5 +25,6 @@ def serialize_transaction(doc: dict) -> dict:
         "quantity": float(doc.get("quantity", 0)),
         "price": float(doc.get("price", 0)),
         "date": _stringify(doc.get("date", "")) or "",
+        "memo": memo,
         "created_at": _stringify(doc.get("created_at", "")) or "",
     }

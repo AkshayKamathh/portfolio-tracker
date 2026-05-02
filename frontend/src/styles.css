@@ -130,7 +130,8 @@ body {
 }
 
 .form-field input,
-.form-field select {
+.form-field select,
+.form-field textarea {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
@@ -139,8 +140,15 @@ body {
   background: #fff;
 }
 
+.form-field textarea {
+  min-height: 72px;
+  resize: vertical;
+  font-family: inherit;
+}
+
 .form-field input:focus,
-.form-field select:focus {
+.form-field select:focus,
+.form-field textarea:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
@@ -264,6 +272,14 @@ tbody td {
 
 tbody tr:last-child td {
   border-bottom: 0;
+}
+
+.memo-cell {
+  max-width: 11rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
 }
 
 .warning-banner {

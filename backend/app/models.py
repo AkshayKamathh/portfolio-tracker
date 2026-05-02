@@ -5,6 +5,8 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
+MEMO_MAX_LEN = 500
+
 
 class TransactionCreate(BaseModel):
     ticker: str
@@ -12,6 +14,7 @@ class TransactionCreate(BaseModel):
     quantity: float = Field(..., gt=0)
     price: float = Field(..., gt=0)
     date: date
+    memo: Optional[str] = None
 
     @field_validator("ticker")
     @classmethod
@@ -21,6 +24,16 @@ class TransactionCreate(BaseModel):
             raise ValueError("ticker must not be empty")
         return cleaned
 
+    @field_validator("memo")
+    @classmethod
+    def memo_optional(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        text = value.strip()
+        if len(text) > MEMO_MAX_LEN:
+            raise ValueError(f"memo must be at most {MEMO_MAX_LEN} characters")
+        return text or None
+
 
 class TransactionUpdate(BaseModel):
     ticker: str | None = None
@@ -28,6 +41,7 @@ class TransactionUpdate(BaseModel):
     quantity: float | None = None
     price: float | None = None
     date: Optional[date] = None
+    memo: Optional[str] = None
 
     @field_validator("ticker")
     @classmethod
@@ -57,6 +71,16 @@ class TransactionUpdate(BaseModel):
             raise ValueError("price must be greater than zero")
         return value
 
+    @field_validator("memo")
+    @classmethod
+    def memo_optional(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        text = value.strip()
+        if len(text) > MEMO_MAX_LEN:
+            raise ValueError(f"memo must be at most {MEMO_MAX_LEN} characters")
+        return text or None
+
 
 class TransactionResponse(BaseModel):
     id: str
@@ -65,6 +89,7 @@ class TransactionResponse(BaseModel):
     quantity: float
     price: float
     date: str
+    memo: str
     created_at: str
 
 

@@ -9,6 +9,7 @@ const emptyForm = () => ({
   quantity: "",
   price: "",
   date: today(),
+  memo: "",
 });
 
 export default function TransactionForm({ editing, onCancelEdit, onCreated }) {
@@ -25,6 +26,7 @@ export default function TransactionForm({ editing, onCancelEdit, onCreated }) {
         quantity: String(editing.quantity),
         price: String(editing.price),
         date: (editing.date || "").slice(0, 10),
+        memo: editing.memo ?? "",
       });
     } else {
       setForm(emptyForm());
@@ -47,10 +49,15 @@ export default function TransactionForm({ editing, onCancelEdit, onCreated }) {
         price: Number(form.price),
         date: form.date,
       };
+      const memoTrim = form.memo.trim();
       if (editing) {
+        payload.memo = memoTrim;
         await updateTransaction(editing.id, payload);
         setFeedback({ type: "success", message: "Transaction updated." });
       } else {
+        if (memoTrim) {
+          payload.memo = memoTrim;
+        }
         await createTransaction(payload);
         setFeedback({ type: "success", message: "Transaction added." });
         setForm(emptyForm());
@@ -123,6 +130,16 @@ export default function TransactionForm({ editing, onCancelEdit, onCreated }) {
             value={form.date}
             onChange={update("date")}
             required
+          />
+        </div>
+        <div className="form-field" style={{ gridColumn: "1 / -1" }}>
+          <label htmlFor="memo">Memo (optional)</label>
+          <textarea
+            id="memo"
+            maxLength={500}
+            placeholder="Short note"
+            value={form.memo}
+            onChange={update("memo")}
           />
         </div>
         <div className="form-field">

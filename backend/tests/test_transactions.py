@@ -3,17 +3,17 @@
 from bson import ObjectId
 
 
-def _create_buy(client, ticker="AAPL", quantity=10, price=150, date="2024-01-10"):
-    return client.post(
-        "/transactions",
-        json={
-            "ticker": ticker,
-            "transaction_type": "buy",
-            "quantity": quantity,
-            "price": price,
-            "date": date,
-        },
-    )
+def _create_buy(client, ticker="AAPL", quantity=10, price=150, date="2024-01-10", memo=None):
+    body = {
+        "ticker": ticker,
+        "transaction_type": "buy",
+        "quantity": quantity,
+        "price": price,
+        "date": date,
+    }
+    if memo is not None:
+        body["memo"] = memo
+    return client.post("/transactions", json=body)
 
 
 def test_create_buy_transaction(client):
@@ -25,7 +25,19 @@ def test_create_buy_transaction(client):
     assert data["quantity"] == 10
     assert data["price"] == 150
     assert data["date"] == "2024-01-10"
+    assert data["memo"] == ""
     assert data["id"]
+
+
+def test_create_with_memo(client):
+    response = _create_buy(client, memo="  trim me  ")
+    assert response.status_code == 201
+    assert response.json()["memo"] == "trim me"
+
+
+def test_memo_too_long_rejected(client):
+    response = _create_buy(client, memo="x" * 501)
+    assert response.status_code == 422
 
 
 def test_ticker_normalized_to_uppercase(client):
@@ -135,13 +147,21 @@ def test_patch_transaction_updates_fields(client):
     tx_id = created["id"]
     response = client.patch(
         f"/transactions/{tx_id}",
-        json={"quantity": 4, "price": 155},
+        json={"quantity": 4, "price": 155, "memo": "rebalance"},
     )
     assert response.status_code == 200
     data = response.json()
     assert data["quantity"] == 4
     assert data["price"] == 155
     assert data["ticker"] == "AAPL"
+    assert data["memo"] == "rebalance"
+
+
+def test_patch_clears_memo(client):
+    created = _create_buy(client, memo="note").json()
+    response = client.patch(f"/transactions/{created['id']}", json={"memo": ""})
+    assert response.status_code == 200
+    assert response.json()["memo"] == ""
 
 
 def test_patch_empty_body_returns_400(client):
