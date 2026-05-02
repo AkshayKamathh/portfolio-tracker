@@ -16,6 +16,8 @@ Log stock and crypto trades, store them in MongoDB, and view holdings, portfolio
 
 Not included: auth, multi-user, tax lots, broker CSV import, dividends.
 
+**Demo for graders:** step-by-step flow and screenshot checklist → [`docs/DEMO.md`](docs/DEMO.md). Drop PNGs into [`docs/screenshots/`](docs/screenshots/) after you capture them locally.
+
 ---
 
 ## Stack
