@@ -85,7 +85,13 @@ def compute_performance(
         return []
 
     timelines = _quantity_timeline(tx_list)
-    start_str = window_start.isoformat()
+    # Pull extra calendar history before the ledger window so yfinance has prior
+    # bars to align on (single-day / very new portfolios often return empty otherwise).
+    fetch_pad = timedelta(days=120)
+    fetch_start = window_start - fetch_pad
+    if fetch_start < date(1970, 1, 1):
+        fetch_start = date(1970, 1, 1)
+    start_str = fetch_start.isoformat()
     end_str = (window_end + timedelta(days=1)).isoformat()  # yfinance end is exclusive
 
     closes: dict[str, pd.Series] = {}

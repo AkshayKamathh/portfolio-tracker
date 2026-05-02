@@ -30,9 +30,15 @@ const fmtCurrency = (value) =>
     maximumFractionDigits: 0,
   }).format(value || 0);
 
-function PortfolioValueChart({ data }) {
+function PortfolioValueChart({ data, hasHoldings }) {
   if (!data || data.length === 0) {
-    return <div className="empty-state">Add a transaction to see portfolio history.</div>;
+    return (
+      <div className="empty-state">
+        {hasHoldings
+          ? "No history series yet. Yahoo may be slow, your trade dates may be in the future, or the chart date filter may be too narrow—try Clear on the dates, use past trade dates, and refresh in a minute."
+          : "Add a transaction to see portfolio history."}
+      </div>
+    );
   }
   return (
     <ResponsiveContainer width="100%" height={260}>
@@ -57,11 +63,13 @@ function PortfolioValueChart({ data }) {
   );
 }
 
-function BenchmarkChart({ data }) {
+function BenchmarkChart({ data, hasHoldings }) {
   if (!data || data.length === 0) {
     return (
       <div className="empty-state">
-        Benchmark data will appear once price history is available.
+        {hasHoldings
+          ? "Benchmark needs the same daily history as the portfolio chart. If that chart is empty, fix trade dates or wait for Yahoo; then this chart fills in."
+          : "Benchmark data will appear once price history is available."}
       </div>
     );
   }
@@ -139,15 +147,16 @@ function AllocationChart({ assets }) {
 }
 
 export default function Charts({ performance, benchmark, assets }) {
+  const hasHoldings = (assets || []).some((a) => a.quantity > 0);
   return (
     <div className="chart-grid">
       <div className="chart-card full">
         <h3>Portfolio value over time</h3>
-        <PortfolioValueChart data={performance} />
+        <PortfolioValueChart data={performance} hasHoldings={hasHoldings} />
       </div>
       <div className="chart-card">
         <h3>Portfolio vs S&amp;P 500</h3>
-        <BenchmarkChart data={benchmark} />
+        <BenchmarkChart data={benchmark} hasHoldings={hasHoldings} />
       </div>
       <div className="chart-card">
         <h3>Asset allocation</h3>
