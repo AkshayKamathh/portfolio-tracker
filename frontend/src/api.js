@@ -16,8 +16,8 @@ async function request(path, options = {}) {
             ? body.detail
             : JSON.stringify(body.detail);
       }
-    } catch (_err) {
-      // No JSON body; keep default message.
+    } catch {
+      // response body wasn't JSON
     }
     throw new Error(detail);
   }

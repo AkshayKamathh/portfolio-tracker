@@ -1,4 +1,4 @@
-"""Build CSV payloads for transaction exports (matches dashboard column order)."""
+"""CSV bytes for transaction exports (same column order as the UI table)."""
 
 import csv
 import io

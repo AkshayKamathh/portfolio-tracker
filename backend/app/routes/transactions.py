@@ -1,4 +1,4 @@
-"""HTTP endpoints for creating, reading, and deleting transactions."""
+"""Transaction CRUD and CSV export."""
 
 from datetime import datetime
 

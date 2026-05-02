@@ -1,4 +1,4 @@
-"""MongoDB connection helpers (lazy client; tests patch out the collection)."""
+"""MongoDB client (lazy singleton; tests patch the collection)."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ def _get_client() -> MongoClient:
             raise RuntimeError(
                 "MONGO_URI is not set. Add it to your .env before running the backend."
             )
-        # certifi bundle avoids TLS verify failures on some macOS Python installs.
+        # certifi helps TLS on some Python/macOS setups
         kwargs: dict = {"tlsCAFile": certifi.where()}
         ssl_cert_file = os.getenv("SSL_CERT_FILE")
         if ssl_cert_file:

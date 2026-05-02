@@ -6,7 +6,7 @@ function escapeCsvCell(value) {
   return s;
 }
 
-/** Download the given transaction rows as a UTF-8 CSV (BOM prefix for Excel). */
+// Client-side CSV download; BOM so Excel opens UTF-8 cleanly.
 export function downloadTransactionsCsv(transactions, filename) {
   const headers = [
     "id",

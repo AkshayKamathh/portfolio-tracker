@@ -13,7 +13,7 @@ def _stringify(value: Any) -> Any:
 
 
 def serialize_transaction(doc: dict) -> dict:
-    """Convert a transaction document into an API-safe dict."""
+    """Mongo transaction doc → JSON field names and string ids."""
     if doc is None:
         return {}
     raw_memo = doc.get("memo", "")

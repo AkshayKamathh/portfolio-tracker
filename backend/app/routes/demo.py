@@ -1,4 +1,4 @@
-"""Demo data seeding: reset transactions and insert the README demo rows."""
+"""Replace all transactions with the built-in demo set."""
 
 from __future__ import annotations
 

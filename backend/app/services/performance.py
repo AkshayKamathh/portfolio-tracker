@@ -1,4 +1,4 @@
-"""Historical portfolio performance and S&P 500 benchmark comparison."""
+"""Portfolio history and SPY benchmark from stored transactions."""
 
 from datetime import date, datetime, timedelta
 from typing import Iterable
@@ -16,7 +16,7 @@ def _earliest_date(transactions: list[dict]) -> date | None:
 
 
 def _quantity_timeline(transactions: list[dict]) -> dict[str, list[tuple[date, float]]]:
-    """Per-ticker list of (date, cumulative_quantity) after each transaction."""
+    """For each ticker: (date, quantity on hand) after each tx, in time order."""
     sorted_tx = sorted(transactions, key=_sort_key)
     running: dict[str, float] = {}
     timeline: dict[str, list[tuple[date, float]]] = {}
@@ -41,7 +41,7 @@ def _quantity_timeline(transactions: list[dict]) -> dict[str, list[tuple[date, f
 
 
 def _quantity_on(timeline: list[tuple[date, float]], target: date) -> float:
-    """How many units were owned on `target` given the per-ticker timeline."""
+    """Position size on `target` from a single-ticker timeline."""
     qty = 0.0
     for d, q in timeline:
         if d <= target:
@@ -57,7 +57,7 @@ def compute_performance(
     from_date: date | None = None,
     to_date: date | None = None,
 ) -> list[dict]:
-    """Return a list of {date, portfolio_value} points across the portfolio history."""
+    """Daily `{date, portfolio_value}` inside the optional date window."""
     tx_list = list(transactions)
     if not tx_list:
         return []
@@ -73,8 +73,7 @@ def compute_performance(
 
     timelines = _quantity_timeline(tx_list)
     start_str = window_start.isoformat()
-    # yfinance end date is exclusive; add a day so today is included.
-    end_str = (window_end + timedelta(days=1)).isoformat()
+    end_str = (window_end + timedelta(days=1)).isoformat()  # yfinance end is exclusive
 
     closes: dict[str, pd.Series] = {}
     for ticker in timelines.keys():
@@ -86,7 +85,7 @@ def compute_performance(
     if not closes:
         return []
 
-    # One shared date index per ticker, forward-filled so chart gaps are not zeros.
+    # Shared calendar across tickers; forward-fill so missing days are not zeroed out.
     idx = pd.Index(sorted({d for series in closes.values() for d in series.index}))
     if idx.empty:
         return []
@@ -120,7 +119,7 @@ def compute_performance(
 
 
 def compute_benchmark(performance: list[dict]) -> list[dict]:
-    """Return cumulative-return comparison between the portfolio and SPY."""
+    """Cumulative % return for the portfolio vs SPY on the same dates."""
     if not performance:
         return []
 
@@ -140,8 +139,7 @@ def compute_benchmark(performance: list[dict]) -> list[dict]:
     if spy_raw.empty:
         return []
 
-    # Align SPY closes to the portfolio dates and forward-fill so the benchmark
-    # doesn't arbitrarily drop points due to missing date keys.
+    # Reindex SPY to portfolio dates and forward-fill missing bars.
     perf_dates = pd.Index([p["date"] for p in performance])
     spy = spy_raw.reindex(perf_dates).ffill()
     if spy.empty:

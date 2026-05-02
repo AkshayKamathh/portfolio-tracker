@@ -1,5 +1,6 @@
 {
   "name": "portfolio-tracker-frontend",
+  "description": "React UI for the portfolio tracker API",
   "private": true,
   "version": "1.0.0",
   "type": "module",

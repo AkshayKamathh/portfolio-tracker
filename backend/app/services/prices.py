@@ -1,4 +1,4 @@
-"""Price fetching helpers built on top of yfinance with a small TTL cache."""
+"""Live and historical quotes through yfinance, with a short TTL cache."""
 
 import time
 from typing import Any
@@ -30,11 +30,7 @@ def clear_cache() -> None:
 
 
 def get_current_price(ticker: str) -> float:
-    """Return the most recent price for a ticker.
-
-    Tries `fast_info.last_price` first, then falls back to the latest close
-    from a short history window so crypto tickers like BTC-USD also work.
-    """
+    """Latest price: fast_info when present, else last close from a short history."""
     symbol = (ticker or "").strip().upper()
     if not symbol:
         raise ValueError("Ticker must not be empty")
@@ -58,7 +54,6 @@ def get_current_price(ticker: str) -> float:
                 _cache_set(("current", symbol), price)
                 return price
     except Exception:
-        # Fall through to history-based fallback.
         pass
 
     history = yf_ticker.history(period="5d")
@@ -70,7 +65,7 @@ def get_current_price(ticker: str) -> float:
 
 
 def get_historical_close(ticker: str, start_date: str, end_date: str) -> pd.Series:
-    """Return a Series of daily close prices indexed by date string."""
+    """Daily closes indexed by `YYYY-MM-DD` strings."""
     symbol = (ticker or "").strip().upper()
     if not symbol:
         raise ValueError("Ticker must not be empty")
@@ -92,7 +87,6 @@ def get_historical_close(ticker: str, start_date: str, end_date: str) -> pd.Seri
 
     close = data["Close"]
     if isinstance(close, pd.DataFrame):
-        # Some yfinance versions return a single-column DataFrame.
         close = close.iloc[:, 0]
     close = close.dropna()
     close.index = pd.to_datetime(close.index).strftime("%Y-%m-%d")

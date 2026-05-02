@@ -1,7 +1,4 @@
-"""Pytest fixtures for the backend test suite.
-
-Routes are monkeypatched to use an in-memory collection instead of Atlas.
-"""
+"""Pytest fixtures; route tests use an in-memory collection (no Atlas)."""
 
 from datetime import datetime
 from typing import Any
@@ -12,7 +9,7 @@ from fastapi.testclient import TestClient
 
 
 class FakeCollection:
-    """Minimal PyMongo collection stub for route tests."""
+    """Tiny stand-in for PyMongo in route tests."""
 
     def __init__(self) -> None:
         self.docs: list[dict] = []

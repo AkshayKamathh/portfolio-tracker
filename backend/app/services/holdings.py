@@ -5,7 +5,7 @@ from typing import Iterable
 
 
 def _to_date(value) -> date:
-    """Normalize a transaction date to a `datetime.date` for sorting."""
+    """Coerce stored dates to `date` for sorting."""
     if isinstance(value, datetime):
         return value.date()
     if isinstance(value, date):
@@ -33,12 +33,7 @@ def _sort_key(tx: dict):
 
 
 def calculate_holdings(transactions: Iterable[dict]) -> list[dict]:
-    """Return current holdings derived from a list of transactions.
-
-    For each ticker we maintain a running quantity and a weighted-average buy
-    price. Buys update both; sells reduce quantity but keep the average
-    buy price the same (we do not track realized gains here).
-    """
+    """Quantity and weighted-average buy price per ticker from the ledger."""
     sorted_tx = sorted(list(transactions), key=_sort_key)
 
     holdings: dict[str, dict] = {}
@@ -57,7 +52,6 @@ def calculate_holdings(transactions: Iterable[dict]) -> list[dict]:
 
         if ttype == "buy":
             new_qty = h["quantity"] + qty
-            # Weighted average buy price: only buys contribute.
             total_cost = h["avg_buy_price"] * h["quantity"] + price * qty
             h["avg_buy_price"] = total_cost / new_qty if new_qty > 0 else 0.0
             h["quantity"] = new_qty
@@ -89,7 +83,7 @@ def calculate_holdings(transactions: Iterable[dict]) -> list[dict]:
 
 
 def current_quantity(transactions: Iterable[dict], ticker: str) -> float:
-    """How many units of `ticker` are currently held."""
+    """Shares held for `ticker` after applying all transactions."""
     target = (ticker or "").strip().upper()
     for h in calculate_holdings(transactions):
         if h["ticker"] == target:
