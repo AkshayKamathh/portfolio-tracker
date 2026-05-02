@@ -15,6 +15,12 @@ def _earliest_date(transactions: list[dict]) -> date | None:
     return min(_to_date(tx.get("date")) for tx in transactions)
 
 
+def _latest_date(transactions: list[dict]) -> date | None:
+    if not transactions:
+        return None
+    return max(_to_date(tx.get("date")) for tx in transactions)
+
+
 def _quantity_timeline(transactions: list[dict]) -> dict[str, list[tuple[date, float]]]:
     """For each ticker: (date, quantity on hand) after each tx, in time order."""
     sorted_tx = sorted(transactions, key=_sort_key)
@@ -63,11 +69,18 @@ def compute_performance(
         return []
 
     earliest = _earliest_date(tx_list)
-    if earliest is None:
+    latest = _latest_date(tx_list)
+    if earliest is None or latest is None:
         return []
     today = date.today()
+    # Extend through the latest ledger date, not only "today", so future-dated
+    # rows (e.g. user picks tomorrow) still get a non-empty chart window.
+    ledger_end = max(today, latest)
     window_start = max(earliest, from_date) if from_date else earliest
-    window_end = min(today, to_date) if to_date else today
+    if to_date is not None:
+        window_end = min(ledger_end, to_date)
+    else:
+        window_end = ledger_end
     if window_end < window_start:
         return []
 

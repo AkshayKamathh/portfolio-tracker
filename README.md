@@ -119,6 +119,7 @@ Quotes are cached for 60 seconds on the server to ease rate limits.
 - Holdings use weighted-average buy price; sells reduce shares only.
 - Benchmark ticker is **SPY** in code; swap there if you want another index fund.
 - Yahoo data can be sparse or slow; the API still returns JSON and may add **warnings** when a live quote fails.
+- **Performance / benchmark** charts use a window through the **latest transaction date**, even if that date is still in the future, so the lines are not empty when all trades are dated “tomorrow.” Yahoo may still omit prices for true future calendar days until the market prints a bar.
 
 ---
 

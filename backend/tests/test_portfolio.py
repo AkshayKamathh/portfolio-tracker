@@ -1,5 +1,7 @@
 """Route-level tests for the portfolio analytics endpoints."""
 
+from datetime import date, timedelta
+
 import pandas as pd
 
 from app.routes import portfolio as portfolio_routes
@@ -153,6 +155,28 @@ def test_performance_inverted_range_returns_empty(client, monkeypatch):
     response = client.get("/performance?from=2024-01-12&to=2024-01-10")
     assert response.status_code == 200
     assert response.json() == []
+
+
+def test_performance_future_dated_trades_not_empty_window(client, monkeypatch):
+    """Ledger dates after today must not collapse the chart window to nothing."""
+    future = (date.today() + timedelta(days=3)).isoformat()
+    day_before = (date.today() + timedelta(days=2)).isoformat()
+    day_after = (date.today() + timedelta(days=4)).isoformat()
+    _create_buy(client, "AAPL", 10, 100, future)
+
+    def fake_history(ticker, start, end):
+        idx = pd.Index([day_before, future, day_after])
+        return pd.Series([100.0, 110.0, 120.0], index=idx, name=ticker)
+
+    monkeypatch.setattr(
+        performance_service.prices, "get_historical_close", fake_history
+    )
+
+    response = client.get("/performance")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) >= 1
+    assert any(p["portfolio_value"] > 0 for p in data)
 
 
 def test_benchmark_aligns_portfolio_and_spy(client, monkeypatch):
