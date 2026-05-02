@@ -113,8 +113,8 @@ cd frontend && npm run build
 | DELETE | `/transactions/{id}` | Delete by ObjectId |
 | GET | `/holdings` | Holdings JSON only (same math as portfolio; UI uses `/portfolio`) |
 | GET | `/portfolio` | Summary + per-asset rows + `warnings` |
-| GET | `/performance` | `[{ date, portfolio_value }, ...]` |
-| GET | `/benchmark` | `[{ date, portfolio_return, benchmark_return }, ...]` |
+| GET | `/performance` | `[{ date, portfolio_value }, ...]`; optional `from` / `to` (`YYYY-MM-DD`) |
+| GET | `/benchmark` | `[{ date, portfolio_return, benchmark_return }, ...]`; same optional range |
 
 Errors return JSON: `error`, `status_code`, `detail`.
 

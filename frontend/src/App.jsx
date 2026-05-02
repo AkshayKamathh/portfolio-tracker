@@ -39,14 +39,22 @@ export default function App() {
   const [seedFeedback, setSeedFeedback] = useState(null);
   const [editingTransaction, setEditingTransaction] = useState(null);
 
+  const [chartFromDraft, setChartFromDraft] = useState("");
+  const [chartToDraft, setChartToDraft] = useState("");
+  const [chartFrom, setChartFrom] = useState("");
+  const [chartTo, setChartTo] = useState("");
+
   const refreshAnalytics = useCallback(async () => {
     setLoadingAnalytics(true);
     setError(null);
+    const range = {};
+    if (chartFrom) range.from = chartFrom;
+    if (chartTo) range.to = chartTo;
     try {
       const [port, perf, bench] = await Promise.all([
         getPortfolio(),
-        getPerformance(),
-        getBenchmark(),
+        getPerformance(range),
+        getBenchmark(range),
       ]);
       setPortfolio(port);
       setPerformance(perf);
@@ -56,7 +64,7 @@ export default function App() {
     } finally {
       setLoadingAnalytics(false);
     }
-  }, []);
+  }, [chartFrom, chartTo]);
 
   const refreshTransactions = useCallback(async () => {
     setLoadingTransactions(true);
@@ -154,11 +162,62 @@ export default function App() {
       <section className="section">
         <div className="section-title">Charts</div>
         {hasAssets ? (
-          <Charts
-            performance={performance}
-            benchmark={benchmark}
-            assets={portfolio.assets}
-          />
+          <>
+            <form
+              className="transaction-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setChartFrom(chartFromDraft.trim());
+                setChartTo(chartToDraft.trim());
+              }}
+              style={{ marginBottom: 12 }}
+            >
+              <div className="form-field">
+                <label htmlFor="chartFromInput">From</label>
+                <input
+                  id="chartFromInput"
+                  type="date"
+                  value={chartFromDraft}
+                  onChange={(e) => setChartFromDraft(e.target.value)}
+                />
+              </div>
+              <div className="form-field">
+                <label htmlFor="chartToInput">To</label>
+                <input
+                  id="chartToInput"
+                  type="date"
+                  value={chartToDraft}
+                  onChange={(e) => setChartToDraft(e.target.value)}
+                />
+              </div>
+              <div className="form-field">
+                <label>&nbsp;</label>
+                <button className="btn" type="submit" disabled={loadingAnalytics}>
+                  Apply
+                </button>
+              </div>
+              <div className="form-field">
+                <label>&nbsp;</label>
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={() => {
+                    setChartFromDraft("");
+                    setChartToDraft("");
+                    setChartFrom("");
+                    setChartTo("");
+                  }}
+                >
+                  Clear
+                </button>
+              </div>
+            </form>
+            <Charts
+              performance={performance}
+              benchmark={benchmark}
+              assets={portfolio.assets}
+            />
+          </>
         ) : (
           <div className="card muted empty-state">
             Add your first transaction to unlock charts.

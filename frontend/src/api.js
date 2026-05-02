@@ -25,6 +25,14 @@ async function request(path, options = {}) {
   return response.json();
 }
 
+function withDateRangeQuery(path, { from, to } = {}) {
+  const params = new URLSearchParams();
+  if (from) params.set("from", from);
+  if (to) params.set("to", to);
+  const q = params.toString();
+  return q ? `${path}?${q}` : path;
+}
+
 export const getTransactions = () => request("/transactions");
 
 export const getTransactionsByTicker = (ticker) =>
@@ -47,8 +55,10 @@ export const updateTransaction = (id, payload) =>
 
 export const getPortfolio = () => request("/portfolio");
 
-export const getPerformance = () => request("/performance");
+export const getPerformance = (range = {}) =>
+  request(withDateRangeQuery("/performance", range));
 
-export const getBenchmark = () => request("/benchmark");
+export const getBenchmark = (range = {}) =>
+  request(withDateRangeQuery("/benchmark", range));
 
 export const seedDemo = () => request("/demo/seed", { method: "POST" });

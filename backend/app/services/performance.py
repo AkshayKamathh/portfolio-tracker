@@ -51,23 +51,30 @@ def _quantity_on(timeline: list[tuple[date, float]], target: date) -> float:
     return qty
 
 
-def compute_performance(transactions: Iterable[dict]) -> list[dict]:
+def compute_performance(
+    transactions: Iterable[dict],
+    *,
+    from_date: date | None = None,
+    to_date: date | None = None,
+) -> list[dict]:
     """Return a list of {date, portfolio_value} points across the portfolio history."""
     tx_list = list(transactions)
     if not tx_list:
         return []
 
-    start = _earliest_date(tx_list)
-    if start is None:
+    earliest = _earliest_date(tx_list)
+    if earliest is None:
         return []
-    end = date.today()
-    if end < start:
+    today = date.today()
+    window_start = max(earliest, from_date) if from_date else earliest
+    window_end = min(today, to_date) if to_date else today
+    if window_end < window_start:
         return []
 
     timelines = _quantity_timeline(tx_list)
-    start_str = start.isoformat()
+    start_str = window_start.isoformat()
     # yfinance end date is exclusive; add a day so today is included.
-    end_str = (end + timedelta(days=1)).isoformat()
+    end_str = (window_end + timedelta(days=1)).isoformat()
 
     closes: dict[str, pd.Series] = {}
     for ticker in timelines.keys():
@@ -93,7 +100,7 @@ def compute_performance(transactions: Iterable[dict]) -> list[dict]:
     points: list[dict] = []
     for d_str in idx:
         d_obj = datetime.strptime(d_str, "%Y-%m-%d").date()
-        if d_obj < start:
+        if d_obj < window_start or d_obj > window_end:
             continue
         total = 0.0
         for ticker, timeline in timelines.items():

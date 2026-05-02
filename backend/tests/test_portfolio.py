@@ -120,6 +120,41 @@ def test_performance_empty_when_no_transactions(client):
     assert response.json() == []
 
 
+def test_performance_filters_by_date_range(client, monkeypatch):
+    _create_buy(client, "AAPL", 10, 100, "2024-01-10")
+
+    def fake_history(ticker, start, end):
+        idx = pd.Index(["2024-01-10", "2024-01-11", "2024-01-12"])
+        return pd.Series([100.0, 110.0, 120.0], index=idx, name=ticker)
+
+    monkeypatch.setattr(
+        performance_service.prices, "get_historical_close", fake_history
+    )
+
+    response = client.get("/performance?from=2024-01-11&to=2024-01-12")
+    assert response.status_code == 200
+    assert response.json() == [
+        {"date": "2024-01-11", "portfolio_value": 1100.0},
+        {"date": "2024-01-12", "portfolio_value": 1200.0},
+    ]
+
+
+def test_performance_inverted_range_returns_empty(client, monkeypatch):
+    _create_buy(client, "AAPL", 10, 100, "2024-01-10")
+
+    def fake_history(ticker, start, end):
+        idx = pd.Index(["2024-01-10", "2024-01-11"])
+        return pd.Series([100.0, 110.0], index=idx, name=ticker)
+
+    monkeypatch.setattr(
+        performance_service.prices, "get_historical_close", fake_history
+    )
+
+    response = client.get("/performance?from=2024-01-12&to=2024-01-10")
+    assert response.status_code == 200
+    assert response.json() == []
+
+
 def test_benchmark_aligns_portfolio_and_spy(client, monkeypatch):
     _create_buy(client, "AAPL", 10, 100, "2024-01-10")
 
@@ -151,3 +186,30 @@ def test_benchmark_empty_when_no_transactions(client):
     response = client.get("/benchmark")
     assert response.status_code == 200
     assert response.json() == []
+
+
+def test_benchmark_filters_by_date_range(client, monkeypatch):
+    _create_buy(client, "AAPL", 10, 100, "2024-01-10")
+
+    def fake_history(ticker, start, end):
+        idx = pd.Index(["2024-01-10", "2024-01-11", "2024-01-12"])
+        if ticker == "AAPL":
+            return pd.Series([100.0, 110.0, 120.0], index=idx, name="AAPL")
+        if ticker == "SPY":
+            return pd.Series([400.0, 404.0, 408.0], index=idx, name="SPY")
+        raise ValueError(f"unexpected ticker {ticker}")
+
+    monkeypatch.setattr(
+        performance_service.prices, "get_historical_close", fake_history
+    )
+
+    response = client.get("/benchmark?from=2024-01-11&to=2024-01-12")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 2
+    assert data[0]["date"] == "2024-01-11"
+    assert data[0]["portfolio_return"] == 0.0
+    assert data[0]["benchmark_return"] == 0.0
+    assert data[1]["date"] == "2024-01-12"
+    assert data[1]["portfolio_return"] == 9.09
+    assert data[1]["benchmark_return"] == 0.99

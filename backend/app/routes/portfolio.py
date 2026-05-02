@@ -1,6 +1,9 @@
 """HTTP endpoints for derived portfolio analytics."""
 
-from fastapi import APIRouter
+from datetime import date
+from typing import Annotated
+
+from fastapi import APIRouter, Query
 
 from app.database import get_transactions_collection
 from app.services import prices
@@ -72,11 +75,25 @@ def get_portfolio():
 
 
 @router.get("/performance")
-def get_performance():
-    return compute_performance(_load_transactions())
+def get_performance(
+    from_date: Annotated[date | None, Query(alias="from")] = None,
+    to_date: Annotated[date | None, Query(alias="to")] = None,
+):
+    return compute_performance(
+        _load_transactions(),
+        from_date=from_date,
+        to_date=to_date,
+    )
 
 
 @router.get("/benchmark")
-def get_benchmark():
-    performance = compute_performance(_load_transactions())
+def get_benchmark(
+    from_date: Annotated[date | None, Query(alias="from")] = None,
+    to_date: Annotated[date | None, Query(alias="to")] = None,
+):
+    performance = compute_performance(
+        _load_transactions(),
+        from_date=from_date,
+        to_date=to_date,
+    )
     return compute_benchmark(performance)
