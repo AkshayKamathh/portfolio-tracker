@@ -132,3 +132,5 @@ Quotes are cached for 60 seconds on the server to ease rate limits.
 **MongoDB:** Allow your IP in Atlas **Network Access**; check user/password in `MONGO_URI`. The backend uses **certifi** for TLS; set `SSL_CERT_FILE` if your environment needs a different CA bundle.
 
 **Charts:** If history is empty, wait and retry or reduce tickers; Yahoo throttling happens sometimes.
+
+**“Could not load data: Failed to fetch”:** The API is unreachable or CORS blocked the browser. Confirm `uvicorn` is running, `VITE_API_BASE_URL` matches the API (default `http://localhost:8000`), and restart `npm run dev` after changing any `frontend/.env`. The backend allows both `http://localhost:5173` and `http://127.0.0.1:5173` for local Vite.
