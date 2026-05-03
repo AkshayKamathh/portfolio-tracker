@@ -62,3 +62,23 @@ export const getBenchmark = (range = {}) =>
   request(withDateRangeQuery("/benchmark", range));
 
 export const seedDemo = () => request("/demo/seed", { method: "POST" });
+
+// Alerts
+export const getAlerts = () => request("/alerts");
+
+export const createAlert = (payload) =>
+  request("/alerts", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+export const deleteAlert = (id) =>
+  request(`/alerts/${id}`, { method: "DELETE" });
+
+export const updateAlert = (id, payload) =>
+  request(`/alerts/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+
+export const checkAlerts = () => request("/alerts/check");
