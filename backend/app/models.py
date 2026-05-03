@@ -136,3 +136,81 @@ class BenchmarkPoint(BaseModel):
     date: str
     portfolio_return: float
     benchmark_return: float
+
+# Alerts
+# An alert is a rule like "tell me when AAPL drops below $150".
+# - direction is "below" or "above" 
+# - active flips False once the alert fires so the banner doesn't spam.
+
+class AlertCreate(BaseModel):
+    ticker: str
+    direction: Literal["below", "above"]
+    threshold: float = Field(..., gt=0)
+    note: Optional[str] = None
+
+    @field_validator("ticker")
+    @classmethod
+    def normalize_ticker(cls, value: str) -> str:
+        cleaned = (value or "").strip().upper()
+        if not cleaned:
+            raise ValueError("ticker must not be empty")
+        return cleaned
+
+    @field_validator("note")
+    @classmethod
+    def note_optional(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        text = value.strip()
+        if len(text) > MEMO_MAX_LEN:
+            raise ValueError(f"note must be at most {MEMO_MAX_LEN} characters")
+        return text or None
+
+
+class AlertUpdate(BaseModel):
+    ticker: str | None = None
+    direction: Literal["below", "above"] | None = None
+    threshold: float | None = None
+    active: bool | None = None
+    note: Optional[str] = None
+
+    @field_validator("ticker")
+    @classmethod
+    def normalize_ticker(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        cleaned = (value or "").strip().upper()
+        if not cleaned:
+            raise ValueError("ticker must not be empty")
+        return cleaned
+
+    @field_validator("threshold")
+    @classmethod
+    def threshold_positive_when_set(cls, value: float | None) -> float | None:
+        if value is None:
+            return None
+        if value <= 0:
+            raise ValueError("threshold must be greater than zero")
+        return value
+
+    @field_validator("note")
+    @classmethod
+    def note_optional(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        text = value.strip()
+        if len(text) > MEMO_MAX_LEN:
+            raise ValueError(f"note must be at most {MEMO_MAX_LEN} characters")
+        return text or None
+
+
+class AlertResponse(BaseModel):
+    """Optional — documents the response shape in /docs but isn't strictly required."""
+    id: str
+    ticker: str
+    direction: str
+    threshold: float
+    active: bool
+    created_at: str
+    triggered_at: str | None
+    note: str | None

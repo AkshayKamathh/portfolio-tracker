@@ -14,6 +14,7 @@ A small full-stack app for logging stock and crypto trades in **MongoDB**, then 
 - **Summary:** total value, cost basis, gain/loss, return %, per-asset rows, and **warnings** when a live quote fails (cost basis is used as a fallback).
 - **Charts:** portfolio value over time, cumulative return vs SPY, and an allocation pie. Optional **from** / **to** query the API and refetch when you click **Apply** on the chart form.
 - **Charts when Yahoo is thin:** if daily history is missing, the value chart falls back to a **flat line at your current portfolio total** (same idea as the summary cards). The benchmark then keeps the dates but sets the **SPY leg to 0%** until real SPY bars exist.
+- **Batch quotes:** `GET /quotes?tickers=AAPL,MSFT` for lab/testing (same Yahoo cache as `/portfolio`).
 - **Sanity checks:** trade dates must sit between **1970-01-01** and **2100-12-31** (API + browser inputs).
 - **Tests:** pytest with a fake in-memory collection and mocked prices—no Atlas required to run them.
 
@@ -91,6 +92,7 @@ GitHub **Actions** (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml)) 
 | GET | `/portfolio` | Summary + assets + `warnings` |
 | GET | `/performance` | Daily `{ date, portfolio_value }`; optional `from`, `to` (`YYYY-MM-DD`) |
 | GET | `/benchmark` | Cumulative % vs SPY on the same dates |
+| GET | `/quotes` | Batch prices: `?tickers=AAPL,MSFT,BTC-USD` |
 
 Errors return JSON with `error`, `status_code`, and `detail`.
 
@@ -117,8 +119,11 @@ Errors return JSON with `error`, `status_code`, and `detail`.
 | `MONGO_DB_NAME` | No | `portfolio_tracker` | Database name |
 | `FRONTEND_ORIGIN` | No | `http://localhost:5173` | CORS (comma-separated list allowed) |
 | `VITE_API_BASE_URL` | No | `http://localhost:8000` | Where the browser calls the API |
+| `YF_CACHE_TTL` | No | `60` | Seconds to cache Yahoo Finance responses in-memory |
 
-Server-side quote cache TTL is **60 seconds** to ease Yahoo rate limits.
+Server-side quote cache defaults to **60 seconds** (`YF_CACHE_TTL`) to ease Yahoo rate limits.
+
+**Atlas `mongodb+srv`:** `backend/requirements.txt` includes **dnspython** so DNS resolution works reliably.
 
 ---
 
@@ -129,3 +134,5 @@ Server-side quote cache TTL is **60 seconds** to ease Yahoo rate limits.
 **“Could not load data: Failed to fetch”:** API not running, wrong `VITE_API_BASE_URL`, or browser blocked the call. Start `uvicorn`, match the URL to the port you use, restart `npm run dev` after editing `frontend/.env`, hard-refresh the tab.
 
 **Charts flat or slow:** Yahoo throttling or gaps; wait and retry. Use **past** trade dates for the most reliable history. Clear the chart **From/To** fields and click **Apply** if you narrowed the window too far.
+
+If charts look sparse or benchmark data is missing, it can be Yahoo rate limiting or thin history for some tickers—the API returns JSON safely, but series may have fewer points.

@@ -6,7 +6,9 @@ from typing import Any
 import pandas as pd
 import yfinance as yf
 
-_CACHE_TTL_SECONDS = 60
+from app import config
+
+_CACHE_TTL_SECONDS = config.YF_CACHE_TTL or 60
 _CACHE: dict[tuple, tuple[float, Any]] = {}
 
 

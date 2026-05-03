@@ -12,7 +12,7 @@ from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import config
-from app.routes import portfolio, transactions
+from app.routes import portfolio, transactions, alerts
 from app.routes.demo import router as demo_router
 
 app = FastAPI(title="Portfolio Tracker", version="1.0.0")
@@ -27,6 +27,7 @@ app.add_middleware(
 
 app.include_router(transactions.router)
 app.include_router(portfolio.router)
+app.include_router(alerts.router)
 app.include_router(demo_router)
 
 

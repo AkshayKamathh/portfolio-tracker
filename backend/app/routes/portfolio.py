@@ -3,7 +3,7 @@
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 
 from app.database import get_transactions_collection
 from app.services import prices
@@ -97,3 +97,26 @@ def get_benchmark(
         to_date=to_date,
     )
     return compute_benchmark(performance)
+
+
+@router.get("/quotes")
+def get_quotes(
+    tickers: str = Query(
+        ...,
+        description="Comma-separated symbols, e.g. AAPL,MSFT,BTC-USD",
+    ),
+):
+    """Batch latest prices (uses the same TTL cache as /portfolio)."""
+    symbols = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not symbols:
+        raise HTTPException(status_code=422, detail="Provide at least one ticker.")
+
+    prices_out: dict[str, float] = {}
+    errors: list[str] = []
+    for sym in symbols:
+        try:
+            prices_out[sym] = round(prices.get_current_price(sym), 4)
+        except Exception as exc:
+            errors.append(f"{sym}: {exc}")
+
+    return {"prices": prices_out, "errors": errors}
