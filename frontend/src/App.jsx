@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  checkAlerts,
+  getAlerts,
   getTransactionsByTicker,
   getBenchmark,
   getPerformance,
@@ -14,6 +16,9 @@ import TransactionForm from "./components/TransactionForm.jsx";
 import TransactionTable from "./components/TransactionTable.jsx";
 import { MAX_INPUT_DATE, MIN_INPUT_DATE } from "./dateBounds.js";
 import { downloadTransactionsCsv } from "./utils/exportTransactionsCsv.js";
+import AlertForm from "./components/AlertForm.jsx";
+import AlertTable from "./components/AlertTable.jsx";
+import AlertBanner from "./components/AlertBanner.jsx";
 
 const EMPTY_PORTFOLIO = {
   total_value: 0,
@@ -26,6 +31,8 @@ const EMPTY_PORTFOLIO = {
 
 export default function App() {
   const [transactions, setTransactions] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [triggeredAlerts, setTriggeredAlerts] = useState([]);
   const [portfolio, setPortfolio] = useState(EMPTY_PORTFOLIO);
   const [performance, setPerformance] = useState([]);
   const [benchmark, setBenchmark] = useState([]);
@@ -82,10 +89,20 @@ export default function App() {
     }
   }, [tickerFilter]);
 
+  const refreshAlerts = useCallback(async () => {
+  try {
+    const data = await getAlerts();
+    setAlerts(data);
+  } catch (err) {
+    setError(err.message);
+  }
+}, []);
+
   const refreshAll = useCallback(async () => {
     await refreshAnalytics();
     await refreshTransactions();
-  }, [refreshAnalytics, refreshTransactions]);
+    await refreshAlerts();
+  }, [refreshAnalytics, refreshTransactions, refreshAlerts]);
 
   useEffect(() => {
     refreshAnalytics();
@@ -94,6 +111,39 @@ export default function App() {
   useEffect(() => {
     refreshTransactions();
   }, [refreshTransactions]);
+
+  useEffect(() => {
+  refreshAlerts();
+}, [refreshAlerts]);
+
+useEffect(() => {
+  let cancelled = false;
+
+  async function poll() {
+    try {
+      const result = await checkAlerts();
+      if (cancelled) return;
+      const newOnes = result.triggered || [];
+      if (newOnes.length > 0) {
+        setTriggeredAlerts((prev) => {
+          const seen = new Set(prev.map((a) => a.id));
+          const fresh = newOnes.filter((a) => !seen.has(a.id));
+          return [...prev, ...fresh];
+        });
+        // Refresh the alerts table too — alerts that fired flipped to "Triggered"
+        await refreshAlerts();
+      }
+    } catch {
+    }
+  }
+
+  poll(); // run once immediately
+  const interval = setInterval(poll, 10_000); // then every 60s
+  return () => {
+    cancelled = true;
+    clearInterval(interval);
+  };
+}, [refreshAlerts]);
 
   const loading = loadingAnalytics || loadingTransactions;
   const hasAssets = (portfolio?.assets?.length ?? 0) > 0;
@@ -107,6 +157,10 @@ export default function App() {
       </header>
 
       {error && <div className="app-error">Could not load data: {error}</div>}
+      <AlertBanner
+        triggered={triggeredAlerts}
+        onDismiss={() => setTriggeredAlerts([])}
+      />
 
       <section className="section">
         <div className="section-title">
@@ -244,6 +298,14 @@ export default function App() {
         <div className="section-title">Holdings</div>
         <AssetTable assets={portfolio.assets} />
       </section>
+
+      <section className="section">
+  <div className="section-title">Price alerts</div>
+  <AlertForm onCreated={refreshAlerts} />
+  <div style={{ marginTop: 16 }}>
+    <AlertTable alerts={alerts} onDeleted={refreshAlerts} />
+  </div>
+</section>
 
       <section className="section">
         <div className="section-title">Transactions</div>
